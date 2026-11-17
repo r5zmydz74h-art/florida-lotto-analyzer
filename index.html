@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>FL Lotto Analyzer</title>
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #121826;
+      --card: #1a2234;
+      --accent: #38bdf8;
+      --hot: #fb923c;
+      --cold: #60a5fa;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --border: #2d3748;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      min-height: 100dvh;
+    }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 1rem 1rem 2.5rem; }
+    header { text-align: center; padding: 0.5rem 0 1rem; }
+    h1 { margin: 0; font-size: 1.45rem; font-weight: 700; }
+    .sub { color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; }
+    .disclaimer {
+      background: #3f1d1d;
+      border: 1px solid #7f1d1d;
+      color: #fecaca;
+      border-radius: 12px;
+      padding: 0.7rem 0.9rem;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      margin-bottom: 1rem;
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+    }
+    select, input[type="number"] {
+      width: 100%;
+      padding: 0.7rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .range-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; }
+    input[type="range"] { flex: 1; accent-color: var(--accent); }
+    .rval { min-width: 2.2rem; text-align: right; font-weight: 700; color: var(--accent); }
+    button.gen {
+      width: 100%;
+      padding: 0.85rem;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+      color: #0f172a;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.gen:active { transform: scale(0.98); }
+    .stats { font-size: 0.82rem; line-height: 1.5; }
+    .stats strong { color: var(--accent); }
+    .hot { color: var(--hot); }
+    .cold { color: var(--cold); }
+    .tickets { display: flex; flex-direction: column; gap: 0.6rem; }
+    .ticket {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 0.9rem;
+    }
+    .t-head { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.45rem; }
+    .balls { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .ball {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--accent); color: #0f172a;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 0.95rem;
+    }
+    .ball.hot { background: var(--hot); color: white; }
+    .ball.cold { background: var(--cold); color: white; }
+    .copy { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 0.2rem 0.5rem; font-size: 0.7rem; }
+    footer { text-align: center; margin-top: 1.5rem; font-size: 0.7rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Florida Lotto Analyzer</h1>
+      <div class="sub">Live stats + ticket generator · Add to Home Screen</div>
+    </header>
+
+    <div class="disclaimer">
+      <strong>Odds never change.</strong> Every 6-number combo has exactly 1 in 22,957,480 chance. Frequency analysis describes the past only. Play for fun.
+    </div>
+
+    <div class="panel stats" id="statsPanel">
+      <div>Loading analysis…</div>
+    </div>
+
+    <div class="panel">
+      <label>Method</label>
+      <select id="method">
+        <option value="weighted" selected>Frequency Weighted</option>
+        <option value="hotcold">Hot + Cold Mix</option>
+        <option value="random">Pure Random</option>
+      </select>
+
+      <label>Tickets</label>
+      <input type="number" id="count" min="1" max="12" value="5">
+
+      <div id="strengthBox">
+        <label>Weight strength</label>
+        <div class="range-row">
+          <input type="range" id="strength" min="0.7" max="2.2" step="0.1" value="1.2">
+          <span class="rval" id="rval">1.2</span>
+        </div>
+      </div>
+
+      <button class="gen" id="genBtn">Generate Tickets</button>
+    </div>
+
+    <div class="tickets" id="results"></div>
+
+    <footer>
+      Official frequency data (matrix era) · Florida Lottery<br>
+      Works offline after first load
+    </footer>
+  </div>
+
+  <script>
+    const FREQ = {
+      1:334,2:304,3:303,4:338,5:333,6:346,7:319,8:315,
+      9:327,10:327,11:293,12:331,13:321,14:296,15:343,16:316,
+      17:288,18:313,19:317,20:321,21:303,22:315,23:298,24:296,
+      25:318,26:318,27:326,28:331,29:316,30:325,31:333,32:319,
+      33:305,34:305,35:292,36:337,37:318,38:343,39:311,40:319,
+      41:317,42:304,43:341,44:335,45:339,46:307,47:322,48:348,
+      49:321,50:304,51:344,52:346,53:309
+    };
+    const TOTAL = 2825;
+    const EXPECTED = TOTAL * 6 / 53;
+    const hotNums = Object.entries(FREQ).sort((a,b)=>b[1]-a[1]).slice(0,10).map(x=>+x[0]);
+    const coldNums = Object.entries(FREQ).sort((a,b)=>a[1]-b[1]).slice(0,10).map(x=>+x[0]);
+
+    function analyze() {
+      const devs = [];
+      for (let n=1; n<=53; n++) {
+        const obs = FREQ[n];
+        const dev = obs - EXPECTED;
+        const std = Math.sqrt(EXPECTED * (1 - 6/53));
+        const z = dev / std;
+        devs.push({n, obs, dev, z});
+      }
+      devs.sort((a,b)=>Math.abs(b.z)-Math.abs(a.z));
+      return devs;
+    }
+
+    function renderStats() {
+      const devs = analyze();
+      const hot = hotNums.slice(0,6);
+      const cold = coldNums.slice(0,6);
+      document.getElementById("statsPanel").innerHTML = `
+        <div><strong>Draws analyzed:</strong> ${TOTAL.toLocaleString()}</div>
+        <div><strong>Expected per number:</strong> ${EXPECTED.toFixed(1)}</div>
+        <div><strong>Hottest:</strong> <span class="hot">${hot.join(", ")}</span></div>
+        <div><strong>Coldest:</strong> <span class="cold">${cold.join(", ")}</span></div>
+        <div style="margin-top:0.4rem;font-size:0.75rem;color:var(--muted)">
+          Top deviant: #${devs[0].n} (z=${devs[0].z.toFixed(2)})
+        </div>
+      `;
+    }
+
+    function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+    function sample(arr,k){
+      const c=[...arr]; const o=[];
+      for(let i=0;i<k && c.length;i++) o.push(c.splice(Math.floor(Math.random()*c.length),1)[0]);
+      return o;
+    }
+
+    function genWeighted(strength){
+      let avail = Object.keys(FREQ).map(Number);
+      let w = avail.map(n => Math.pow(FREQ[n], strength));
+      const t = [];
+      for(let i=0;i<6;i++){
+        const total = w.reduce((a,b)=>a+b,0);
+        let r = Math.random()*total, idx=0;
+        for(let j=0;j<w.length;j++){ r-=w[j]; if(r<=0){idx=j;break;} }
+        t.push(avail[idx]);
+        avail.splice(idx,1); w.splice(idx,1);
+      }
+      return t.sort((a,b)=>a-b);
+    }
+
+    function genHotCold(){
+      const nh = rand(3,4);
+      let t = sample(hotNums, nh).concat(sample(coldNums, 6-nh));
+      t = [...new Set(t)];
+      while(t.length<6){
+        const n = rand(1,53);
+        if(!t.includes(n)) t.push(n);
+      }
+      return t.slice(0,6).sort((a,b)=>a-b);
+    }
+
+    function genRandom(){
+      const s = new Set();
+      while(s.size<6) s.add(rand(1,53));
+      return [...s].sort((a,b)=>a-b);
+    }
+
+    function generate(method, strength){
+      if(method==="weighted") return genWeighted(strength);
+      if(method==="hotcold") return genHotCold();
+      return genRandom();
+    }
+
+    function isHot(n){ return hotNums.slice(0,8).includes(n); }
+    function isCold(n){ return coldNums.slice(0,8).includes(n); }
+
+    function renderTickets(tickets, method){
+      const el = document.getElementById("results");
+      el.innerHTML = "";
+      tickets.forEach((t,i)=>{
+        const card = document.createElement("div");
+        card.className = "ticket";
+        const head = document.createElement("div");
+        head.className = "t-head";
+        head.innerHTML = `<span>Ticket ${i+1}</span><button class="copy" data-t="${t.join(", ")}">Copy</button>`;
+        const balls = document.createElement("div");
+        balls.className = "balls";
+        t.forEach(n=>{
+          const b = document.createElement("div");
+          b.className = "ball" + (isHot(n)?" hot":isCold(n)?" cold":"");
+          b.textContent = n;
+          balls.appendChild(b);
+        });
+        card.appendChild(head);
+        card.appendChild(balls);
+        el.appendChild(card);
+      });
+      el.querySelectorAll(".copy").forEach(btn=>{
+        btn.onclick = ()=>{
+          navigator.clipboard.writeText(btn.dataset.t).then(()=>{
+            btn.textContent = "Copied";
+            setTimeout(()=>btn.textContent="Copy",1200);
+          });
+        };
+      });
+    }
+
+    const methodEl = document.getElementById("method");
+    const countEl = document.getElementById("count");
+    const strengthEl = document.getElementById("strength");
+    const rval = document.getElementById("rval");
+    const strengthBox = document.getElementById("strengthBox");
+    const genBtn = document.getElementById("genBtn");
+
+    strengthEl.oninput = ()=> rval.textContent = strengthEl.value;
+    methodEl.onchange = ()=> strengthBox.style.display = methodEl.value==="weighted" ? "block" : "none";
+
+    genBtn.onclick = ()=>{
+      const method = methodEl.value;
+      const count = Math.min(12, Math.max(1, +countEl.value || 5));
+      const strength = +strengthEl.value || 1.2;
+      const tickets = Array.from({length:count}, ()=>generate(method, strength));
+      renderTickets(tickets, method);
+    };
+
+    renderStats();
+    genBtn.click();
+  </script>
+</body>
+</html>
